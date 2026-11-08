@@ -77,3 +77,30 @@ def get_lecture_summary(lecture: int) -> str:
         available = sorted(p.stem for p in (DATA_DIR / "lectures").glob("*.md"))
         return f"第{lecture}回の要点はまだありません。用意されている回: {', '.join(available)}"
     return path.read_text(encoding="utf-8")
+
+def make_quiz(term: str) -> str:
+    """指定した用語について、理解度を確かめるクイズを作るための材料を用語集から返す。
+
+    「LoRAのクイズを出して」「〇〇を理解できたか確かめたい」と言われたときに使う。
+    term には出題したい用語を1つだけ入れる（例: "LoRA"）。
+    返された定義をもとに、用語名を伏せた問題を1問作り、答えは最後に示すこと。
+    """
+    q = _normalize(term)
+    if not q:
+        return "用語が空です。クイズにしたい用語を1つ指定してください。"
+    glossary = load_glossary()
+    hits = [e for e in glossary if q in _names(e)] or [
+        e for e in glossary if any(q in n for n in _names(e))
+    ]
+    if not hits:
+        return f"用語集に「{term}」は見つかりませんでした。クイズは作れません。"
+    e = hits[0]
+    return json.dumps(
+        {
+            "term": e["term"],
+            "lecture": e["lecture"],
+            "definition": e["definition"],
+            "related": e["related"],
+        },
+        ensure_ascii=False,
+    )
